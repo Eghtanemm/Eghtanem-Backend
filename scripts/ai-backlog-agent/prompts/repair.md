@@ -12,6 +12,7 @@ Repair attempt {{attempt}} of {{max_attempts}}.
 - First analyse the root cause of each problem; don't patch symptoms.
 - Fix only what is needed for these problems; keep the change minimal and within the issue's scope.
 - Never disable, skip or delete tests, and never weaken validation/security to get green checks.
+- {{tests_policy}}
 - Tests already failing on the base branch are not yours to fix (they are excluded from the gate).
 - Re-run the relevant tests via `python3 {{sandbox}} phpunit --filter <TestName>` and
   `python3 {{sandbox}} pint <changed files>` before finishing (exact form, one command at a time; if they

@@ -62,6 +62,29 @@ Hard rules (violating them fails the run):
 """.strip()
 
 
+TESTS_POLICY = {
+    True: {
+        "plan": "Tests: list the regression/feature tests you will add (PHPUnit, following the style in `tests/`). "
+                "Tests run on SQLite in-memory with no network.",
+        "implement": "Add regression tests that fail without your fix and pass with it.",
+        "review": "Check test coverage: do the new tests actually fail without the fix? Missing essential tests are a "
+                  "`high` finding.",
+    },
+    False: {
+        "plan": "Tests: the maintainer has deferred writing tests. Do NOT plan new or changed test files; leave "
+                "`required_tests` empty. Existing tests must keep passing.",
+        "implement": "Do NOT create or modify any file under `tests/` (writing tests is deferred by the maintainer). "
+                     "Existing tests must keep passing.",
+        "review": "New tests are intentionally NOT part of this change (maintainer decision). Do not report missing "
+                  "tests above `low` severity.",
+    },
+}
+
+
+def tests_policy(write_tests: bool, stage: str) -> str:
+    return TESTS_POLICY[bool(write_tests)]["implement" if stage == "repair" else stage]
+
+
 def render(template_name: str, values: dict[str, Any]) -> str:
     text = (PROMPTS_DIR / template_name).read_text(encoding="utf-8")
     for key, value in values.items():

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import schemas
-from claude_runner import ClaudeRunner, render
+from claude_runner import ClaudeRunner, render, tests_policy
 from models import Issue, ReviewFinding, ReviewResult
 
 
@@ -58,6 +58,7 @@ class CodeReviewer:
             "quality_summary": quality_summary,
             "base_sha": base_sha,
             "diff": diff,
+            "tests_policy": tests_policy(self.config.claude.write_tests, "review"),
         })
         result = self.claude.run("review", prompt, worktree, schema=schemas.REVIEW,
                                  max_turns=self.config.claude.review_max_turns, execution_id=execution_id)

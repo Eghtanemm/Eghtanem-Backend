@@ -30,16 +30,17 @@ You can also inspect it with `git diff --cached {{base_sha}}` and read any file 
 
 ## Review checklist
 
+{{tests_policy}}
+
 Correctness (does it really fix the root cause and meet every acceptance criterion?), security,
 authentication/authorization, validation, rate limiting and abuse scenarios, performance (N+1, missing
 indexes, memory), database behaviour and migration safety (existing migrations untouched, reversible,
-no data loss), race conditions, backward compatibility of API contracts, test coverage (do the new tests
-actually fail without the fix?), scope creep and unintended changes, Laravel best practices and
+no data loss), race conditions, backward compatibility of API contracts, scope creep and unintended changes, Laravel best practices and
 consistency with the codebase.
 
 Classify each finding as `critical`, `high`, `medium` or `low`:
 - critical/high: must be fixed before a human even looks at the PR (bugs, security holes, broken
-  contracts, unsafe migrations, missing essential tests, changes outside the issue's scope that alter
+  contracts, unsafe migrations, changes outside the issue's scope that alter
   behaviour).
 - medium/low: worth mentioning; do not block.
 

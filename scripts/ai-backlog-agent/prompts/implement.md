@@ -21,8 +21,8 @@ Implement the approved plan for issue #{{issue_number}} ("{{issue_title}}") in t
   avoid new layers or abstractions the codebase doesn't already use.
 - Preserve existing API contracts unless the plan explicitly says otherwise.
 - Never edit or delete existing migrations; add new ones with a correct `down()`.
-- Add regression tests that fail without your fix and pass with it. Update documentation (README/docs)
-  only where behaviour visible to developers/operators changes.
+- {{tests_policy}}
+- Update documentation (README/docs) only where behaviour visible to developers/operators changes.
 - Do not disable, skip or delete tests; do not weaken validation or security checks to make tests pass.
 - No unrelated changes, no formatting churn in files you don't otherwise touch, no debug leftovers.
 - Run the relevant tests yourself via `python3 {{sandbox}} phpunit --filter <TestName>` and fix failures,

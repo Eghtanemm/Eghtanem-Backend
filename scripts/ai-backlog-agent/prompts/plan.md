@@ -20,8 +20,7 @@ Using your analysis of issue #{{issue_number}} ("{{issue_title}}"), produce an i
 - Database: only *new* migrations, never edits to existing ones; no destructive operations in `up()`;
   describe indexes/constraints and the rollback (`down()`).
 - Security: state the implications (authn, authz, validation, rate limiting, abuse scenarios).
-- Tests: list the regression/feature tests you will add (PHPUnit, following the style in `tests/`).
-  Tests run on SQLite in-memory with no network.
+- {{tests_policy}}
 - List risks and rollback considerations.
 - Carry over `post_merge_human_actions` (steps after merge that only a person can do). They never block the
   code change. Set `requires_human=true` only if the code change itself cannot be made safely (analysis rules).

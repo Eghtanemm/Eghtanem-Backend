@@ -1,4 +1,4 @@
-"""Draft pull request creation (idempotent) and PR description rendering. Never merges."""
+"""Pull request creation (idempotent) and PR description rendering. Never merges."""
 
 from __future__ import annotations
 
@@ -68,10 +68,13 @@ def _bullets(items: list[str] | None, empty: str = "_None._") -> str:
 
 def render_body(issue: Issue, analysis: dict[str, Any], plan: dict[str, Any], implementation: dict[str, Any],
                 files: list[ChangedFile], quality: QualityReport, review: ReviewResult | None,
-                safety_warnings: list[str], fully_resolved: bool, unverified: bool, close_only_when_full: bool) -> str:
+                safety_warnings: list[str], fully_resolved: bool, unverified: bool, close_only_when_full: bool,
+                short: bool = False) -> str:
     follow_up = post_merge_actions(analysis, plan, implementation)
     closes = fully_resolved or not close_only_when_full
     link_line = f"Closes #{issue.number}" if closes else f"Refs #{issue.number} (partial: this PR does **not** close the issue)"
+    if short:
+        return render_short_body(link_line, analysis, plan, implementation, files, quality, review, follow_up, unverified)
 
     gate_lines = []
     for r in quality.results:
@@ -177,8 +180,35 @@ automatically and must not be merged without a maintainer's approval.
     return body
 
 
+def render_short_body(link_line: str, analysis: dict[str, Any], plan: dict[str, Any], implementation: dict[str, Any],
+                      files: list[ChangedFile], quality: QualityReport, review: ReviewResult | None,
+                      follow_up: list[str], unverified: bool) -> str:
+    """Compact description: what/why, changes, files, check results, follow-up."""
+    summary = analysis.get("summary") or analysis.get("problem") or plan.get("root_cause") or ""
+    summary = summary.split(". ")[0].rstrip(".") + "." if summary else ""
+    checks = []
+    for r in quality.results:
+        if r.status.value == "skipped":
+            continue
+        icon = {"passed": "✅", "failed": "❌", "unavailable": "⚠️"}[r.status.value]
+        checks.append(f"{icon} {r.name}: {r.summary}")
+    if review:
+        checks.append(f"{'✅' if review.passed else '❌'} AI review: {review.verdict}")
+    parts = [link_line, "", summary, "", "**Changes**", _bullets((implementation.get("changes_made") or [])[:6]),
+             "", "**Files:** " + ", ".join(f"`{f.path}`" for f in files[:15]) + (" …" if len(files) > 15 else ""),
+             "", "**Checks:** " + " · ".join(checks)]
+    if unverified:
+        parts += ["", "⚠️ Some checks could not run; this change is **unverified**."]
+    if follow_up:
+        parts += ["", "**Required after merge (human):**", _bullets(follow_up)]
+    parts += ["", "_Prepared by the AI backlog agent (Claude Code); needs human review before merging._"]
+    return "\n".join(parts)
+
+
 class PullRequestManager:
-    def __init__(self, gh: GitHubClient, repository: str, base_branch: str, protected: list[str], logger=None):
+    def __init__(self, gh: GitHubClient, repository: str, base_branch: str, protected: list[str], logger=None,
+                 draft: bool = False):
+        self.draft = draft
         self.gh = gh
         self.repository = repository
         self.base_branch = base_branch
@@ -198,10 +228,13 @@ class PullRequestManager:
         existing = self.find_open(branch)
         if existing:
             if self.logger:
-                self.logger.info(f"Draft PR already exists for {branch}: {existing.url} (not creating a duplicate)")
+                self.logger.info(f"PR already exists for {branch}: {existing.url} (not creating a duplicate)")
             return existing
-        result = self.gh.gh(["pr", "create", "-R", self.repository, "--draft", "--base", self.base_branch,
-                             "--head", branch, "--title", title, "--body-file", "-"], input_text=body, retry=False)
+        args = ["pr", "create", "-R", self.repository, "--base", self.base_branch,
+                "--head", branch, "--title", title, "--body-file", "-"]
+        if self.draft:
+            args.insert(4, "--draft")
+        result = self.gh.gh(args, input_text=body, retry=False)
         url = result.stdout.strip().splitlines()[-1] if result.stdout.strip() else ""
         info = self.verify(url or branch, branch)
         return info
@@ -214,11 +247,11 @@ class PullRequestManager:
             raise GitHubError(f"PR {data.get('url')} has unexpected head/base ({data.get('headRefName')} -> {data.get('baseRefName')})")
         if data.get("state") != "OPEN":
             raise GitHubError(f"PR {data.get('url')} is not open")
-        if not data.get("isDraft"):
+        if self.draft and not data.get("isDraft"):
             if self.logger:
                 self.logger.warning(f"PR {data.get('url')} is not a draft; converting it to draft")
             self.gh.gh(["pr", "ready", str(data["number"]), "-R", self.repository, "--undo"])
-        return PullRequestInfo(data["number"], data["url"], True)
+        return PullRequestInfo(data["number"], data["url"], bool(data.get("isDraft")) or self.draft)
 
     def unverified(self, quality: QualityReport) -> bool:
         return any(r.status == GateStatus.UNAVAILABLE for r in quality.results)

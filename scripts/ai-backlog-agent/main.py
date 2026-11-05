@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """AI backlog agent: GitHub Project backlog -> Claude Code -> quality gates ->
-independent review -> Draft PR, one issue at a time, until the eligible backlog
+independent review -> PR, one issue at a time, until the eligible backlog
 is exhausted.
 
     python3 scripts/ai-backlog-agent/main.py               # whole eligible backlog
@@ -50,7 +50,7 @@ EXIT_OK, EXIT_SYSTEMIC, EXIT_CONFIG, EXIT_INTERRUPTED = 0, 2, 3, 130
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="main.py",
-        description="Process the GitHub Project backlog sequentially with Claude Code and open Draft PRs.",
+        description="Process the GitHub Project backlog sequentially with Claude Code and open PRs.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Default (no flags): process every eligible issue, one by one, until none remain.",
     )
@@ -198,7 +198,8 @@ def build_processor(config: Config, env: Environment, state: ExecutionState, log
     return IssueProcessor(
         config=config, project=env.project, gh=env.gh, git=env.git, worktrees=worktrees, claude=claude, quality=quality,
         reviewer=CodeReviewer(claude, config),
-        prs=PullRequestManager(env.gh, env.repository, env.base_branch, config.safety.protected_branches, logger),
+        prs=PullRequestManager(env.gh, env.repository, env.base_branch, config.safety.protected_branches, logger,
+                               draft=config.pull_requests.draft),
         state=state, logger=logger, repository=env.repository, base_branch=env.base_branch, run_id=run_id, no_pr=no_pr,
     )
 

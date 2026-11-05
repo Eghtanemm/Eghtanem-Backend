@@ -41,6 +41,7 @@ class ClaudeConfig:
     review_max_turns: int = 30
     timeout: int = 1800  # seconds per Claude invocation
     max_repair_attempts: int = 2
+    write_tests: bool = False  # false = Claude must not add/modify files under tests/ (tests deferred)
     restricted: bool = True  # --restricted: file tools confined to the worktree
     resume_sessions: bool = True  # analysis -> plan -> implement share one session
 
@@ -98,7 +99,8 @@ class QualityGatesConfig:
 
 @dataclass
 class PullRequestConfig:
-    draft: bool = True
+    draft: bool = False  # true = open PRs as drafts
+    description: str = "short"  # short | full
     auto_merge: bool = False
     close_issue_only_when_fully_resolved: bool = True
     comment_on_issue: bool = True
@@ -238,8 +240,8 @@ def validate(config: Config) -> None:
         raise ConfigError("execution.stop_on_systemic_failure cannot be disabled")
     if c.pull_requests.auto_merge:
         raise ConfigError("pull_requests.auto_merge=true is not supported: PRs are never merged automatically")
-    if not c.pull_requests.draft:
-        raise ConfigError("pull_requests.draft must be true: AI PRs are always created as drafts")
+    if c.pull_requests.description not in ("short", "full"):
+        raise ConfigError("pull_requests.description must be short or full")
     unsafe = {
         "allow_production_access": c.safety.allow_production_access,
         "allow_production_deployment": c.safety.allow_production_deployment,

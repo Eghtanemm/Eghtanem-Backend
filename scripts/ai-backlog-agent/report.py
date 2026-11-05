@@ -133,7 +133,7 @@ def render_summary(summary: dict[str, Any]) -> str:
         f"- Eligible at start: {t['eligible_at_start']}",
         f"- Attempted this run: {t['attempted']}",
         f"- Successfully processed: {t['succeeded']}",
-        f"- Draft PRs created: {t['draft_prs_created']}",
+        f"- PRs created: {t['draft_prs_created']}",
         f"- Failed: {t['failed']}",
         f"- Flagged for human intervention this run: {t['needs_human_this_run']}",
         f"- Skipped (claim lost/race): {t['skipped_claim']}",

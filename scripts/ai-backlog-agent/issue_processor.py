@@ -2,7 +2,7 @@
 
 claim -> workspace -> baseline -> analyze -> plan -> implement
       -> [quality gates -> independent review -> repair]* -> commit
-      -> push -> draft PR -> project status -> cleanup
+      -> push -> PR -> project status -> cleanup
 
 Every stage transition is persisted before moving on, so an interrupted
 execution can be resumed from the last completed stage (``--resume``) without
@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 import schemas
-from claude_runner import ClaudeRunner, render
+from claude_runner import ClaudeRunner, render, tests_policy
 from code_reviewer import CodeReviewer, format_findings, parse_review
 from git_manager import GitManager, branch_name
 from github_client import GitHubClient
@@ -315,7 +315,8 @@ class IssueProcessor:
 
     def _plan(self, ctx: ExecutionContext) -> None:
         self.log.info("Preparing implementation plan...")
-        prompt = render("plan.md", {**self._issue_values(ctx), "analysis": ctx.analysis})
+        prompt = render("plan.md", {**self._issue_values(ctx), "analysis": ctx.analysis,
+                                    "tests_policy": tests_policy(self.config.claude.write_tests, "plan")})
         resume = ctx.sessions.get("analyze") if self.config.claude.resume_sessions else None
         result = self._run_with_resume_fallback("plan", prompt, ctx, schemas.PLAN, resume, self.config.claude.analysis_max_turns)
         ctx.plan = result.structured or {}
@@ -337,6 +338,7 @@ class IssueProcessor:
                           "Review them (git diff) and complete or correct them.")
         prompt = render("implement.md", {**self._issue_values(ctx), "analysis": ctx.analysis, "plan": ctx.plan,
                                          "sandbox": self.claude.sandbox,
+                                         "tests_policy": tests_policy(self.config.claude.write_tests, "implement"),
                                          "baseline_failures": "\n".join(f"- {t}" for t in failing) or "- (none)"}) + dirty_note
         resume = ctx.sessions.get("plan") if self.config.claude.resume_sessions else None
         result = self._run_with_resume_fallback("implement", prompt, ctx, schemas.IMPLEMENTATION, resume, None)
@@ -376,6 +378,11 @@ class IssueProcessor:
                     if f.path.startswith("database/migrations/") and f.status.startswith("A")}
         s = self.config.safety
         scan = scan_diff(ctx.files, added, contents, s.forbidden_paths, s.max_changed_files, s.max_changed_lines)
+        if not self.config.claude.write_tests:
+            touched = [f.path for f in ctx.files if f.path.startswith("tests/")]
+            if touched:
+                scan.blocking.append("test files changed although writing tests is disabled (claude.write_tests=false): "
+                                     + ", ".join(touched[:10]))
         mentioned = set(ctx.plan.get("affected_files") or []) | set(ctx.implementation.get("files_modified") or [])
         unexpected = [f.path for f in ctx.files if mentioned and f.path not in mentioned and not f.path.startswith("tests/")]
         ctx.safety_warnings = [f"File changed but not listed in the plan/report: `{p}`" for p in unexpected[:10]]
@@ -445,6 +452,7 @@ class IssueProcessor:
             "issue_number": str(ctx.issue.number), "issue_title": ctx.issue.title, "repair_source": source,
             "attempt": str(attempt), "max_attempts": str(self.config.claude.max_repair_attempts),
             "problems": problems, "sandbox": self.claude.sandbox,
+            "tests_policy": tests_policy(self.config.claude.write_tests, "repair"),
         })
         resume = ctx.sessions.get("implement") if self.config.claude.resume_sessions else None
         if not resume:
@@ -483,7 +491,7 @@ class IssueProcessor:
         self._stage(ctx, Stage.PUSHED, f"pushed {ctx.branch}")
 
     def _create_pr(self, ctx: ExecutionContext) -> None:
-        self.log.info("Creating Draft PR...")
+        self.log.info("Creating Draft PR..." if self.config.pull_requests.draft else "Creating PR...")
         if not ctx.files and ctx.worktree:
             self.git.stage_all(ctx.worktree)
             ctx.files = self.git.changed_files(ctx.worktree, ctx.base_sha)
@@ -493,19 +501,20 @@ class IssueProcessor:
         title = pr_title(ctx.issue.number, ctx.implementation.get("commit_summary") or ctx.issue.title, fully,
                          self.config.pull_requests.title_max_length)
         body = render_body(ctx.issue, ctx.analysis, ctx.plan, ctx.implementation, ctx.files, quality, ctx.review,
-                           ctx.safety_warnings, fully, unverified, self.config.pull_requests.close_issue_only_when_fully_resolved)
+                           ctx.safety_warnings, fully, unverified, self.config.pull_requests.close_issue_only_when_fully_resolved,
+                           short=self.config.pull_requests.description == "short")
         try:
             info = self.prs.create(ctx.issue.number, ctx.branch, title, body)
         except GitHubError as exc:
             raise IssueFailure("pull_request", f"PR creation failed: {exc}", "Branch is pushed; resume with --resume.") from exc
         ctx.pr_number, ctx.pr_url = info.number, info.url
-        self._stage(ctx, Stage.PR_CREATED, f"draft PR {info.url}", pr_number=info.number, pr_url=info.url,
+        self._stage(ctx, Stage.PR_CREATED, f"PR {info.url}", pr_number=info.number, pr_url=info.url,
                     closes_issue=1 if fully else 0)
         self.log.info(f"PR created successfully: {info.url}")
         if self.config.pull_requests.comment_on_issue and not info.reused:
             link = "will close this issue when merged" if fully else "partially addresses this issue (it will not close it)"
             self._safe_comment(ctx.issue.number,
-                               f"🤖 Draft PR #{info.number} was opened by the AI backlog agent and {link}. "
+                               f"🤖 {'Draft PR' if info.is_draft else 'PR'} #{info.number} was opened by the AI backlog agent and {link}. "
                                "It requires human review before merging.")
 
     def _update_project(self, ctx: ExecutionContext) -> None:
