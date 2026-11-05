@@ -26,10 +26,10 @@ return [
             'docs' => 'docs',
             'oauth2_callback' => 'api/oauth2-callback',
             'middleware' => [
-                'api' => [],
+                'api' => ['throttle:api'],
                 'asset' => [],
                 'docs' => [],
-                'oauth2_callback' => [],
+                'oauth2_callback' => ['throttle:api'],
             ],
             'group_options' => [],
         ],
