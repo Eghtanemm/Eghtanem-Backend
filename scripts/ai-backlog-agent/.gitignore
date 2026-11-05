@@ -1,0 +1,8 @@
+# Runtime state: execution registry, logs, reports (never commit)
+state/
+# Local configuration (copy from config.example.yaml)
+config.yaml
+config.yml
+config.json
+__pycache__/
+*.pyc

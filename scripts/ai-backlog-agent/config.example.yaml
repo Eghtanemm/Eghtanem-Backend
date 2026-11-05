@@ -1,0 +1,100 @@
+# AI backlog agent configuration.
+#   cp scripts/ai-backlog-agent/config.example.yaml scripts/ai-backlog-agent/config.yaml
+# config.yaml is git-ignored. Every key is optional; omitted keys use the defaults shown here.
+# No secrets belong in this file: GitHub and Claude use your existing CLI logins.
+
+github:
+  organization: Eghtanemm
+  project_number: 1
+  repository: auto          # "owner/name", or auto = parsed from the 'origin' remote
+  base_branch: auto         # branch name, or auto = the repository's default branch on GitHub
+  remote: origin
+  page_size: 50             # GraphQL page size for project items (pagination is automatic)
+  max_retries: 5            # retries for transient GitHub errors / rate limits
+
+claude:
+  model: null               # null = your Claude Code default; or an alias such as sonnet / opus / fable
+  effort: null              # null, low, medium, high, xhigh, max
+  max_turns: 60             # implementation / repair stages
+  analysis_max_turns: 30    # analysis / plan / investigation stages
+  review_max_turns: 30
+  timeout: 1800             # seconds per Claude invocation (hard wall-clock limit)
+  max_repair_attempts: 2    # per failing source (quality gates, review, safety scan)
+  restricted: true          # claude --restricted: file tools confined to the issue worktree
+  resume_sessions: true     # analyze -> plan -> implement -> repair continue one Claude session
+
+execution:
+  mode: sequential          # only sequential is supported
+  default_limit: null       # null = process the whole eligible backlog
+  continue_after_isolated_failure: true
+  stop_on_systemic_failure: true
+  allow_parallel: false
+  resume_enabled: true
+  max_attempts_per_issue: 2 # failed attempts across runs before --retry-failed gives up
+  worktree_root: ~/.cache/ai-backlog-agent/worktrees
+  state_dir: state          # relative to scripts/ai-backlog-agent/
+  claim_comment: false      # post a comment on the issue when work starts
+
+selection:
+  priorities: [P0, P1, P2, P3]
+  priority_field: Priority                     # project field, if it exists; otherwise labels are used
+  priority_label_pattern: '^(?:priority[:/ _-]?)?(P\d)$'
+  size_field: Size
+  size_order: [XS, S, M, L, XL]
+  require_backlog_status: true
+  skip_existing_prs: true
+  skip_blocked_issues: true
+  skip_epics: true                             # issues with open sub-issues
+  min_body_chars: 80
+  needs_verification_label: needs-verification
+  human_required_labels: [needs-human, ai:needs-human, human-required, do-not-automate]
+  investigate_human_required: true             # analyse + document human-required issues (never implement)
+  investigate_only_labels: [production-readiness]
+
+quality_gates:
+  pint: true
+  pint_autofix: true          # run pint on changed files before checking them
+  phpunit: true               # full suite, baseline-aware (pre-existing failures don't block)
+  phpstan: true               # runs only if PHPStan/Larastan is installed and configured
+  composer_audit: true        # runs when composer.json/lock change
+  migrations: true            # new migrations: migrate / rollback / migrate on disposable SQLite
+  independent_review: true
+  php_runner: auto            # auto | docker | local  (auto: local php if installed, else docker)
+  docker_image: auto          # auto = "<repo-dir>-app" (docker compose default image name)
+  on_unavailable: fail        # fail | allow (allow = PR created but marked UNVERIFIED)
+  phpunit_timeout: 1200
+  blocking_review_severities: [critical, high]
+
+pull_requests:
+  draft: true                 # must stay true
+  auto_merge: false           # must stay false
+  close_issue_only_when_fully_resolved: true
+  comment_on_issue: true
+  title_max_length: 72
+
+safety:
+  require_human_approval_for_destructive_operations: true
+  allow_production_access: false
+  allow_production_deployment: false
+  allow_secret_modification: false
+  allow_protected_branch_push: false
+  protected_branches: [main, master, staging, production, development, develop, test, release]
+  max_changed_files: 40
+  max_changed_lines: 2000
+
+# Status option names are matched case-insensitively against the real project
+# ("In Progress" matches the project's "In progress"). Missing options are reported, never created.
+project_status:
+  backlog: Backlog
+  in_progress: In Progress
+  in_review: In Review
+  blocked: Blocked
+  in_review_fallback: null    # used when in_review does not exist; null = leave status unchanged
+  revert_to_backlog_on_failure: true
+
+human_intervention:
+  label: ai:needs-human
+  apply_label: true
+  create_label_if_missing: true
+  post_comment: true          # security-labelled issues get reasons only (details stay local)
+  set_blocked_status_if_available: true
