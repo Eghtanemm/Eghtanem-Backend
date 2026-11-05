@@ -488,7 +488,7 @@ class IssueProcessor:
             self.git.stage_all(ctx.worktree)
             ctx.files = self.git.changed_files(ctx.worktree, ctx.base_sha)
         quality = ctx.quality or QualityReport([])
-        fully = is_fully_resolved(ctx.plan, ctx.implementation, ctx.review)
+        fully = is_fully_resolved(ctx.plan, ctx.implementation, ctx.review, ctx.analysis)
         unverified = self.prs.unverified(quality)
         title = pr_title(ctx.issue.number, ctx.implementation.get("commit_summary") or ctx.issue.title, fully,
                          self.config.pull_requests.title_max_length)
@@ -563,6 +563,7 @@ class IssueProcessor:
         self.log.warning(f"#{ctx.issue.number} requires human intervention: {reason}")
         report_path = self._write_human_report(ctx, exc)
         hi = self.config.human_intervention
+        labeled = 0
         if not self.no_pr:
             sensitive = ctx.issue.has_label("security") and not public_safe
             lines = [
@@ -587,6 +588,7 @@ class IssueProcessor:
                     if hi.create_label_if_missing:
                         self.gh.ensure_label(self.repository, hi.label, "d93f0b", "AI agent: needs human intervention")
                     self.gh.add_label(self.repository, ctx.issue.number, hi.label)
+                    labeled = 1
                 blocked = self.project.status_option(self.config.project_status.blocked)
                 if hi.set_blocked_status_if_available and blocked:
                     self.project.set_status(ctx.issue, blocked.name)
@@ -598,7 +600,7 @@ class IssueProcessor:
                 self.log.warning(f"Could not fully mark #{ctx.issue.number} on GitHub: {gh_exc}")
         self._discard_or_keep(ctx)
         self.state.finish(ctx.execution_id, ExecutionStatus.NEEDS_HUMAN, failure_stage=exc.stage, failure_reason=reason,
-                          recommended_action=f"Human action required; briefing: {report_path}")
+                          recommended_action=f"Human action required; briefing: {report_path}", human_labeled=labeled)
         return self._outcome(ctx, ExecutionStatus.NEEDS_HUMAN, failure_stage=exc.stage, failure_reason=reason,
                              recommended_action=f"See {report_path}")
 

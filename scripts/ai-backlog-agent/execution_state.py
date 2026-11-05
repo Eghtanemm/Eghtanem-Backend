@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS executions (
     pr_number INTEGER,
     pr_url TEXT,
     closes_issue INTEGER,
+    human_labeled INTEGER,
     failure_stage TEXT,
     failure_reason TEXT,
     recommended_action TEXT,
@@ -97,7 +98,7 @@ UPDATABLE = {
     "mode", "stage", "status", "branch", "worktree_path", "base_branch", "base_sha", "claude_sessions",
     "analysis", "plan", "implementation", "quality", "review", "commit_sha", "pr_number", "pr_url",
     "closes_issue", "failure_stage", "failure_reason", "recommended_action", "finished_at", "issue_title",
-    "pid", "host", "run_id",
+    "pid", "host", "run_id", "human_labeled",
 }
 TERMINAL = {ExecutionStatus.SUCCEEDED.value, ExecutionStatus.FAILED.value, ExecutionStatus.NEEDS_HUMAN.value,
             ExecutionStatus.ABANDONED.value}
@@ -174,8 +175,14 @@ class ExecutionState:
             self.conn.execute("PRAGMA journal_mode=WAL")
             self.conn.execute("PRAGMA synchronous=FULL")
             self.conn.executescript(SCHEMA)
+            self._migrate()
             os.chmod(db_path, 0o600)
         self.conn.row_factory = sqlite3.Row
+
+    def _migrate(self) -> None:
+        columns = {row[1] for row in self.conn.execute("PRAGMA table_info(executions)")}
+        if "human_labeled" not in columns:  # added after the first release; NULL = unknown (treated as labelled)
+            self.conn.execute("ALTER TABLE executions ADD COLUMN human_labeled INTEGER")
 
     def close(self) -> None:
         self.conn.close()

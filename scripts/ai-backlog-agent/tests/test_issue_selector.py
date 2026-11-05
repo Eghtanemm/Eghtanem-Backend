@@ -106,8 +106,14 @@ class DuplicatePreventionTest(unittest.TestCase):
         self.assertEqual(self.evaluate(ExecutionStatus.RUNNING.value).category, SkipCategory.IN_PROGRESS)
         self.assertEqual(self.evaluate(ExecutionStatus.INTERRUPTED.value).category, SkipCategory.IN_PROGRESS)
 
-    def test_needs_human_is_skipped(self):
-        self.assertEqual(self.evaluate(ExecutionStatus.NEEDS_HUMAN.value).category, SkipCategory.NEEDS_HUMAN)
+    def test_needs_human_reconsidered_after_label_removed(self):
+        def evaluate(labeled, labels):
+            record = {"execution_id": "e1", "status": ExecutionStatus.NEEDS_HUMAN.value, "human_labeled": labeled}
+            return self.selector.evaluate(make_issue(1, labels=labels), ctx(executions={1: record}))
+        self.assertEqual(evaluate(1, ["ai:needs-human"]).category, SkipCategory.NEEDS_HUMAN)
+        self.assertTrue(evaluate(1, []).eligible)  # maintainer removed the label
+        self.assertTrue(evaluate(None, []).eligible)  # legacy rows
+        self.assertEqual(evaluate(0, []).category, SkipCategory.NEEDS_HUMAN)  # --no-pr run never labelled it
 
     def test_failed_is_excluded_unless_retry_requested(self):
         self.assertEqual(self.evaluate(ExecutionStatus.FAILED.value).category, SkipCategory.FAILED)

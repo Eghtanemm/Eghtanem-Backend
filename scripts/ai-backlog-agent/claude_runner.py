@@ -52,6 +52,10 @@ Hard rules (violating them fails the run):
 - If a command is denied or a tool cannot run, carry on with your task: the orchestrator independently runs
   Pint, PHPUnit and the other quality gates after you. A tooling or permission problem is NEVER a reason to set
   requires_human.
+- Use simple read-only git commands without quoting or escapes (e.g. `git log --oneline -- path`,
+  `git show --stat <sha>`); complex quoted forms may be denied.
+- Actions a person must take after merge (deploy, verify servers, rotate a possibly exposed secret) belong in
+  post_merge_human_actions; they are not a reason to set requires_human.
 - Set requires_human only when the correct change itself needs a human: credential/APP_KEY rotation, production
   access or data changes, destructive/irreversible migrations, infrastructure/deployment, removing a public API
   without a migration plan, changes that could lock users out, or an unresolved product decision.

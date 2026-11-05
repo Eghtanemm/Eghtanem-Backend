@@ -282,6 +282,26 @@ class ProcessorTest(unittest.TestCase):
         self.assertEqual(self.project.status_history, ["In progress", "Backlog"])
         self.assertNotIn("implement", [s for s, _ in self.claude.calls])
 
+    def test_post_merge_human_actions_do_not_block_the_code_change(self):
+        actions = ["Remove the file from deployed servers and confirm a 404"]
+        analysis = {**ANALYSIS, "post_merge_human_actions": actions}
+        plan = {**PLAN, "post_merge_human_actions": actions, "fully_resolves_issue": False}
+        proc = self.build(claude=FakeClaude({"analyze": analysis, "plan": plan}))
+        outcome = proc.process(self.elig())
+        self.assertEqual(outcome.status, ExecutionStatus.SUCCEEDED, outcome.failure_reason)
+        _, _, title, body = self.prs.created[0]
+        self.assertTrue(title.startswith("[AI] Partially address #7"))
+        self.assertTrue(body.startswith("Refs #7"))
+        self.assertIn(actions[0], body)
+        self.assertIn("will not close it", self.gh.comments[-1])
+        self.assertNotIn("ai:needs-human", self.gh.labels)
+
+    def test_human_label_recorded(self):
+        analysis = {**ANALYSIS, "requires_human": True, "human_reasons": ["product decision"]}
+        proc = self.build(claude=FakeClaude({"analyze": analysis}))
+        outcome = proc.process(self.elig())
+        self.assertEqual(self.state.get(outcome.execution_id)["human_labeled"], 1)
+
     def test_unverified_finding_is_not_fixed(self):
         analysis = {**ANALYSIS, "verification": {"status": "uncertain", "evidence": ["could not find"], "reproduction_steps": []}}
         self.issue = make_issue(7, "P1", labels=["needs-verification"])

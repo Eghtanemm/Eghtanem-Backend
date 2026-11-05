@@ -66,7 +66,11 @@ class IssueSelector:
                 where = last.get("pr_url") or f"local branch {last.get('branch')} (--no-pr)"
                 return skip(SkipCategory.COMPLETED, f"already processed: {where}")
             if status == ExecutionStatus.NEEDS_HUMAN.value:
-                return skip(SkipCategory.NEEDS_HUMAN, f"previously flagged for human intervention: {last.get('failure_reason') or ''}".strip())
+                hi = self.config.human_intervention
+                label_removed = (hi.apply_label and last.get("human_labeled") != 0 and not issue.has_label(hi.label))
+                if not label_removed:
+                    return skip(SkipCategory.NEEDS_HUMAN, f"previously flagged for human intervention: {last.get('failure_reason') or ''}".strip())
+                # a maintainer removed the label: the issue may be picked up again
             if status == ExecutionStatus.FAILED.value:
                 attempts = ctx.attempts.get(issue.number, 0)
                 limit = self.config.execution.max_attempts_per_issue

@@ -29,6 +29,7 @@ ANALYSIS = {
             "required": ["status", "evidence", "reproduction_steps"],
         },
         "fix_necessary": _BOOL,
+        "post_merge_human_actions": _STR_LIST,
         "requires_human": _BOOL,
         "human_reasons": _STR_LIST,
         "sufficient_information": _BOOL,
@@ -36,7 +37,7 @@ ANALYSIS = {
         "summary": _STR,
     },
     "required": ["problem", "root_cause", "acceptance_criteria", "verification", "fix_necessary",
-                 "requires_human", "human_reasons", "sufficient_information", "fully_resolvable", "summary"],
+                 "post_merge_human_actions", "requires_human", "human_reasons", "sufficient_information", "fully_resolvable", "summary"],
 }
 
 PLAN = {
@@ -53,13 +54,14 @@ PLAN = {
         "rollback": _STR,
         "fully_resolves_issue": _BOOL,
         "unaddressed_criteria": _STR_LIST,
+        "post_merge_human_actions": _STR_LIST,
         "requires_human": _BOOL,
         "human_reasons": _STR_LIST,
         "commit_summary": _STR,
     },
     "required": ["root_cause", "affected_files", "proposed_solution", "database_changes", "api_compatibility",
                  "security_implications", "required_tests", "risks", "rollback", "fully_resolves_issue",
-                 "requires_human", "human_reasons", "commit_summary"],
+                 "post_merge_human_actions", "requires_human", "human_reasons", "commit_summary"],
 }
 
 IMPLEMENTATION = {
@@ -75,6 +77,7 @@ IMPLEMENTATION = {
         "potential_risks": _STR_LIST,
         "database_changes": _STR,
         "fully_resolves_issue": _BOOL,
+        "post_merge_human_actions": _STR_LIST,
         "requires_human": _BOOL,
         "human_reasons": _STR_LIST,
         "commit_summary": _STR,

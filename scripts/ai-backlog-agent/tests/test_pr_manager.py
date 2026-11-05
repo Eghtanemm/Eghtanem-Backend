@@ -55,6 +55,16 @@ class FormattingTest(unittest.TestCase):
         self.assertTrue(body.startswith("Refs #7"))
         self.assertIn("rotate key", body)
 
+    def test_post_merge_actions_reference_issue_and_list_follow_up(self):
+        plan = {**PLAN, "post_merge_human_actions": ["Confirm /phpinfo.php returns 404 on every environment"]}
+        self.assertFalse(is_fully_resolved(plan, IMPL, review()))
+        body = render_body(make_issue(3), {}, plan, IMPL, [], quality(), review(), [], False, False, True)
+        self.assertTrue(body.startswith("Refs #3"))
+        self.assertIn("## Required Human Follow-up", body)
+        self.assertIn("returns 404 on every environment", body)
+        full = render_body(make_issue(3), {}, PLAN, IMPL, [], quality(), review(), [], True, False, True)
+        self.assertNotIn("Required Human Follow-up", full)
+
     def test_unverified_flag_is_visible(self):
         body = render_body(make_issue(7), {}, PLAN, IMPL, [], quality(GateStatus.UNAVAILABLE), review(), [], True, True, True)
         self.assertIn("UNVERIFIED", body)

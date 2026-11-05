@@ -30,8 +30,9 @@ Implement the approved plan for issue #{{issue_number}} ("{{issue_title}}") in t
   finish anyway - the orchestrator runs every quality gate independently). Note that some tests already fail on the base
   branch (listed below) - you are not required to fix those, but you must not break passing ones.
 - Do not commit; the orchestrator commits after independent checks.
-- If you discover the change needs human approval (destructive migration, credential rotation,
-  production access, product decision), stop and set `requires_human=true` with reasons.
+- If you discover the *code change itself* needs human approval (destructive migration, credential
+  rotation, production access, product decision), stop and set `requires_human=true` with reasons.
+  Steps a person must do after merge go in `post_merge_human_actions` and do not stop you.
 
 Tests already failing on the base branch (pre-existing, not caused by you):
 {{baseline_failures}}

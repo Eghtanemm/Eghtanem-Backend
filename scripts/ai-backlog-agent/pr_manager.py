@@ -40,7 +40,19 @@ def pr_title(issue_number: int, summary: str, fully_resolved: bool, max_len: int
     return prefix + short_description(summary, max(20, max_len - len(prefix)))
 
 
-def is_fully_resolved(plan: dict[str, Any], implementation: dict[str, Any], review: ReviewResult | None) -> bool:
+def post_merge_actions(*reports: dict[str, Any]) -> list[str]:
+    seen: list[str] = []
+    for report in reports:
+        for action in (report or {}).get("post_merge_human_actions") or []:
+            if action and action not in seen:
+                seen.append(action)
+    return seen
+
+
+def is_fully_resolved(plan: dict[str, Any], implementation: dict[str, Any], review: ReviewResult | None,
+                      analysis: dict[str, Any] | None = None) -> bool:
+    if post_merge_actions(analysis or {}, plan, implementation):
+        return False  # a person still has to act after merge: reference the issue, don't close it
     return bool(
         plan.get("fully_resolves_issue")
         and implementation.get("fully_resolves_issue")
@@ -57,6 +69,7 @@ def _bullets(items: list[str] | None, empty: str = "_None._") -> str:
 def render_body(issue: Issue, analysis: dict[str, Any], plan: dict[str, Any], implementation: dict[str, Any],
                 files: list[ChangedFile], quality: QualityReport, review: ReviewResult | None,
                 safety_warnings: list[str], fully_resolved: bool, unverified: bool, close_only_when_full: bool) -> str:
+    follow_up = post_merge_actions(analysis, plan, implementation)
     closes = fully_resolved or not close_only_when_full
     link_line = f"Closes #{issue.number}" if closes else f"Refs #{issue.number} (partial: this PR does **not** close the issue)"
 
@@ -143,6 +156,7 @@ Pre-existing failures on the base branch are excluded from the PHPUnit gate; onl
 
 {_bullets(risks + limitations + safety_warnings)}
 
+{('## Required Human Follow-up' + chr(10) + chr(10) + 'This PR does not close the issue. After merging, a maintainer must:' + chr(10) + chr(10) + _bullets(follow_up) + chr(10)) if follow_up else ''}
 ## Database Changes
 
 {implementation.get('database_changes') or plan.get('database_changes') or 'None.'}

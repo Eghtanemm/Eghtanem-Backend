@@ -229,6 +229,12 @@ The agent then comments on the issue, adds the `ai:needs-human` label, moves the
 comment contains only the reasons; evidence stays local. Removing the label makes the issue
 eligible again.
 
+**Post-merge human actions don't block the code change.** For example: deleting a file from the
+servers and confirming a 404, or checking whether a secret leaked and rotating it. When the code fix
+itself is safe, the agent still opens the Draft PR, titled "Partially address #N". The PR uses
+`Refs #N` (the issue stays open) and lists the required steps in a "Required Human Follow-up"
+section.
+
 `needs-verification` issues are investigated first. They are implemented only if Claude finds
 concrete evidence in the code; otherwise they go to a human with the evidence.
 

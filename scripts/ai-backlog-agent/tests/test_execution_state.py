@@ -102,6 +102,18 @@ class StateTest(unittest.TestCase):
         self.state.save_baseline("abc", "all", {"phpunit": {"ran": True}})
         self.assertEqual(self.state.get_baseline("abc", "all"), {"phpunit": {"ran": True}})
 
+    def test_old_database_is_migrated(self):
+        old = self.tmp / "old.db"
+        import sqlite3 as sq
+        conn = sq.connect(old)
+        conn.executescript("CREATE TABLE executions (execution_id TEXT PRIMARY KEY, run_id TEXT, issue_number INTEGER NOT NULL,"
+                           " status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);")
+        conn.close()
+        migrated = ExecutionState(old)
+        cols = {r[1] for r in migrated.conn.execute("PRAGMA table_info(executions)")}
+        self.assertIn("human_labeled", cols)
+        migrated.close()
+
     def test_db_file_permissions_are_private(self):
         self.assertEqual(os.stat(self.db).st_mode & 0o777, 0o600)
 
