@@ -63,7 +63,7 @@ This document outlines the necessary steps to ensure your Laravel application is
 3. Implement proper CORS rules
 4. Ensure secure headers are implemented
 5. Check that admin-only routes are properly protected
-6. Verify that the AdminMiddleware is correctly applied in production only
+6. Verify that panel access is restricted to admins in all environments by `User::canAccessPanel()` and the AdminMiddleware
 
 ## Performance Optimizations
 
