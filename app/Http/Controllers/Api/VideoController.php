@@ -515,8 +515,8 @@ class VideoController extends Controller
                     'id' => $video->id,
                     'title' => $video->title,
                     'description' => $video->description,
-                    'video_url' => $video->video_url,
-                    'thumbnail_url' => $video->thumbnail_url,
+                    'video_url' => $this->publicStorageUrl($video->video_url),
+                    'thumbnail_url' => $this->publicStorageUrl($video->thumbnail_url),
                     'views_count' => $video->views_count,
                     'likes_count' => $video->likes_count ?? 0,
                     'comments_count' => $video->comments_count ?? 0,
@@ -543,8 +543,8 @@ class VideoController extends Controller
             'id' => $video->id,
             'title' => $video->title,
             'description' => $video->description,
-            'video_url' => $video->video_url,
-            'thumbnail_url' => $video->thumbnail_url,
+            'video_url' => $this->publicStorageUrl($video->video_url),
+            'thumbnail_url' => $this->publicStorageUrl($video->thumbnail_url),
             'views_count' => $video->views_count,
             'likes_count' => $video->likes_count,
             'comments_count' => $video->comments_count,
@@ -552,5 +552,23 @@ class VideoController extends Controller
             'created_at' => $video->created_at,
             'updated_at' => $video->updated_at,
         ]);
+    }
+
+    /**
+     * Turn a path stored on the public disk (e.g. "videos/x.mp4") into a
+     * root-relative URL served by nginx ("/storage/videos/x.mp4"). Kept
+     * relative so it doesn't depend on APP_URL being correct per environment.
+     */
+    private function publicStorageUrl(?string $path): ?string
+    {
+        if ($path === null || $path === '') {
+            return null;
+        }
+
+        if (preg_match('#^https?://#i', $path) || str_starts_with($path, '/storage/')) {
+            return $path;
+        }
+
+        return '/storage/' . preg_replace('#^/*(public/|storage/)?#', '', $path);
     }
 }

@@ -344,4 +344,41 @@ class VideoControllerTest extends TestCase
 
         $response->assertNotFound();
     }
+
+    public function test_my_videos_return_public_storage_urls(): void
+    {
+        $video = Video::factory()->create([
+            'is_active' => false,
+            'user_id' => $this->user->id,
+            'video_url' => 'videos/user_1_abc.mp4',
+            'thumbnail_url' => 'thumbnails/thumb_1_abc.jpg',
+        ]);
+
+        $this->actingAs($this->user)
+            ->getJson('/api/videos/mine')
+            ->assertOk()
+            ->assertJsonPath('data.0.video_url', '/storage/videos/user_1_abc.mp4')
+            ->assertJsonPath('data.0.thumbnail_url', '/storage/thumbnails/thumb_1_abc.jpg');
+
+        $this->actingAs($this->user)
+            ->getJson("/api/videos/mine/{$video->id}")
+            ->assertOk()
+            ->assertJsonPath('video_url', '/storage/videos/user_1_abc.mp4')
+            ->assertJsonPath('thumbnail_url', '/storage/thumbnails/thumb_1_abc.jpg');
+    }
+
+    public function test_my_videos_keep_null_thumbnail(): void
+    {
+        Video::factory()->create([
+            'user_id' => $this->user->id,
+            'video_url' => '/storage/videos/already.mp4',
+            'thumbnail_url' => null,
+        ]);
+
+        $this->actingAs($this->user)
+            ->getJson('/api/videos/mine')
+            ->assertOk()
+            ->assertJsonPath('data.0.video_url', '/storage/videos/already.mp4')
+            ->assertJsonPath('data.0.thumbnail_url', null);
+    }
 }
