@@ -5,10 +5,10 @@ use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\LessonController;
 use App\Http\Controllers\Api\LikeController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\PodcastController;
 use App\Http\Controllers\Api\SubjectController;
 use App\Http\Controllers\Api\VideoController;
-use App\Http\Controllers\Api\PodcastController;
-use App\Http\Controllers\Api\PasswordResetController;
 use App\Models\Video;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -49,7 +49,7 @@ Route::middleware('throttle:otp-sensitive')->group(function () {
     Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 });
 
-// Protected routes with expiry check
+// Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
     // Auth
     Route::get('/user', [AuthController::class, 'user']);
@@ -79,13 +79,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('/notifications/{notification}/mark-as-read', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
-    
+
     // Subject and Lesson routes
     Route::get('/subjects', [SubjectController::class, 'index']);
     Route::get('/subjects/{subject}', [SubjectController::class, 'show']);
     Route::get('/lessons/{lesson}', [LessonController::class, 'show']);
     Route::get('/lessons/{lesson}/stream', [LessonController::class, 'stream']);
-    
+
     // Podcasts
     Route::get('podcasts', [PodcastController::class, 'index']);
     Route::get('podcasts/{podcast}', [PodcastController::class, 'show']);
