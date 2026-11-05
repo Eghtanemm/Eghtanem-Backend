@@ -1,6 +1,6 @@
 services:
   app:
-    image: laravelsail/php84-composer:latest
+    build: .
     ports:
       - "8000:8000"
     volumes:
