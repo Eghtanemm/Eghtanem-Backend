@@ -55,7 +55,7 @@ Users created with the `make:filament-user` command are automatically assigned t
 
 2. Using our custom command which gives more detailed feedback:
    ```bash
-   php artisan app:test-filament-user "Admin Name" admin@example.com password123
+   php artisan app:test-filament-user "Admin Name" admin@example.com your-strong-password
    ```
 
 3. Using our dedicated admin creation command:

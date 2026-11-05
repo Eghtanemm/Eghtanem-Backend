@@ -45,7 +45,12 @@ This document outlines the necessary steps to ensure your Laravel application is
 
 ## Admin User Setup
 
-1. Promote an existing user to admin:
+1. Create the admin user (the command prompts for the password). Do not run `db:seed` in production:
+   ```
+   php artisan app:create-filament-admin "Admin Name" admin@example.com
+   ```
+
+   Or promote an existing user to admin:
    ```
    php artisan app:promote-user-to-admin admin@example.com
    ```

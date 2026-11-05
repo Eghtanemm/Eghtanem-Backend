@@ -88,10 +88,12 @@ SESSION_LIFETIME=120
 php artisan key:generate
 ```
 
-3. Run migrations and seed the database:
+3. Run migrations:
 ```bash
-php artisan migrate --seed
+php artisan migrate --force
 ```
+
+> **Warning:** do not run `--seed` or `db:seed` in production. Create the admin user in Step 9 instead.
 
 4. Set proper permissions:
 ```bash
@@ -126,8 +128,10 @@ php artisan optimize
 
 ## Step 9: Create Admin User
 
+The command prompts for the password, which keeps it out of your shell history:
+
 ```bash
-php artisan app:promote-user-to-admin admin@example.com
+php artisan app:create-filament-admin "Admin Name" admin@example.com
 ```
 
 ## Step 10: Final Checks
