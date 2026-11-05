@@ -11,6 +11,12 @@ class DevSampleSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            $this->command?->warn('DevSampleSeeder only runs in the local and testing environments; skipping.');
+
+            return;
+        }
+
         $user = User::where('email', 'test@example.com')->first()
             ?? User::first();
 

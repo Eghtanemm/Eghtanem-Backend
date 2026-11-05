@@ -24,9 +24,10 @@ cd D:\shared\studio-projects\e8tanem
 
 1. نسخ `.env.example` إلى `.env` (إن لم يكن موجوداً)
 2. إنشاء قاعدة SQLite: `database/database.sqlite`
-3. تثبيت الحزم: `composer install`
-4. توليد مفتاح التطبيق: `php artisan key:generate`
-5. تشغيل الهجرات والبذور + بيانات تجريبية (`DevSampleSeeder`)
+3. التحقق من ضبط `ADMIN_EMAIL` و`ADMIN_PASSWORD` في `.env`، ويتوقف إن لم يكونا مضبوطين (اضبطهما ثم أعد تشغيل السكربت)
+4. تثبيت الحزم: `composer install`
+5. توليد مفتاح التطبيق: `php artisan key:generate`
+6. تشغيل الهجرات والبذور + بيانات تجريبية (`DevSampleSeeder`)
 
 بعد الإعداد، عدّل `.env` إذا لزم الأمر. للتطوير المحلي يُفضّل SQLite:
 
@@ -77,17 +78,19 @@ docker compose restart app
 
 | الدور | البريد | كلمة المرور |
 |------|--------|-------------|
-| مستخدم عادي | `test@example.com` | `password` |
-| مدير (Filament) | `admin@e8tanem.com` | `password123` |
+| مستخدم عادي (في بيئتي `local` و`testing` فقط) | `test@example.com` | `password` |
+| مدير (Filament) | قيمة `ADMIN_EMAIL` في `.env` | قيمة `ADMIN_PASSWORD` في `.env` |
 
-يمكن تغيير بيانات المدير عبر `.env`:
+لا يوجد حساب مدير افتراضي: تفشل البذور إذا لم يُضبط `ADMIN_EMAIL` أو `ADMIN_PASSWORD` في `.env`:
 
 ```env
-ADMIN_EMAIL=admin@e8tanem.com
-ADMIN_PASSWORD=password123
+ADMIN_EMAIL=you@example.com
+ADMIN_PASSWORD=your-strong-password
 ```
 
-ثم أعد تشغيل: `docker compose exec app php artisan db:seed --class=AdminSeeder --force`
+لتغيير بيانات المدير، عدّل القيم ثم أعد تشغيل: `docker compose exec app php artisan db:seed --class=AdminSeeder --force`
+
+في بيئة الإنتاج لا تشغّل البذور؛ اتبع [docs/deploy.md](docs/deploy.md) وأنشئ المدير عبر `php artisan app:create-filament-admin`.
 
 ---
 
@@ -119,6 +122,7 @@ composer install
 copy .env.example .env
 php artisan key:generate
 # اضبط DB_CONNECTION=sqlite وأنشئ database\database.sqlite
+# اضبط ADMIN_EMAIL و ADMIN_PASSWORD في .env وإلا ستفشل البذور
 php artisan migrate --seed
 php artisan serve
 ```
