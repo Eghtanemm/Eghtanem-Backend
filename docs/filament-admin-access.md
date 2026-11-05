@@ -8,10 +8,20 @@ In our application, Filament admin panel access is restricted:
 - Only users with `role = 'admin'` can access the admin panel
 - Regular users (`role = 'user'`) will receive a 403 Forbidden error when trying to access the admin panel
 - This restriction is applied in all environments, including development
+- Non-admin users are rejected at the panel login form with a credentials error; sessions that are already authenticated receive a 403
 
 ## How It Works
 
-1. **AdminMiddleware**: This middleware checks if the current user has admin privileges:
+1. **canAccessPanel**: The User model implements Filament's `FilamentUser` contract. This is the panel's authorization check, and without it Filament denies every user outside the `local` environment:
+   ```php
+   // app/Models/User.php
+   public function canAccessPanel(Panel $panel): bool
+   {
+       return $this->isAdmin();
+   }
+   ```
+
+2. **AdminMiddleware**: This middleware is kept as a second layer and checks if the current user has admin privileges:
    ```php
    // app/Http/Middleware/AdminMiddleware.php
    public function handle(Request $request, Closure $next): Response
@@ -24,7 +34,7 @@ In our application, Filament admin panel access is restricted:
    }
    ```
 
-2. **User Model**: The User model has a `role` field and an `isAdmin()` method:
+3. **User Model**: The User model has a `role` field and an `isAdmin()` method:
    ```php
    // app/Models/User.php
    public function isAdmin(): bool
@@ -33,7 +43,7 @@ In our application, Filament admin panel access is restricted:
    }
    ```
 
-3. **Environmental Control**: The middleware is applied in all environments:
+4. **Environmental Control**: The middleware is applied in all environments:
    ```php
    // app/Providers/Filament/AdminPanelProvider.php
    ->authMiddleware([
