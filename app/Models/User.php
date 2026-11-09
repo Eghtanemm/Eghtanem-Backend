@@ -30,6 +30,8 @@ class User extends Authenticatable
         'refresh_token',
         'refresh_token_expires_at',
         'role',
+        'firebase_uid',
+        'provider'
     ];
 
     /**
@@ -70,7 +72,7 @@ class User extends Authenticatable
     {
         return $this->role === 'admin';
     }
-    
+
     /**
      * Get the user's role.
      *
