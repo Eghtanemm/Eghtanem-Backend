@@ -7,6 +7,7 @@ use App\Http\Requests\SocialLoginRequest;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Kreait\Firebase\Contract\Auth as FirebaseAuth;
 use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
@@ -77,14 +78,17 @@ class SocialAuthController extends Controller
             ]);
         }
 
-        // 4. Generate the tokens (example using Laravel Passport or Sanctum with expiration dates)
-        // Adjust the following token generation according to the authentication package used in your project
-        $accessTokenExpiresAt = Carbon::now()->addDays(30);
-        $refreshTokenExpiresAt = Carbon::now()->addDays(60);
+        // 4. Generate new access and refresh tokens, and set their expiration times
+        $accessToken = $user->createToken('auth_token')->plainTextToken;
+        $refreshToken = bin2hex(random_bytes(64));
 
-        $tokenResult = $user->createToken('SocialLoginToken');
-        $accessToken = $tokenResult->plainTextToken ?? 'app-access-token';
-        $refreshToken = Str::random(64); // or use the refresh token provided by Passport
+        $accessTokenExpiresAt = Carbon::now()->addDays(90);
+        $refreshTokenExpiresAt = Carbon::now()->addDays(90);
+
+        $user->access_token_expires_at = $accessTokenExpiresAt;
+        $user->refresh_token = Hash::make($refreshToken);
+        $user->refresh_token_expires_at = $refreshTokenExpiresAt;
+        $user->save();
 
         // 5. Return the JSON response that matches the exact structure requested by the filter developer in the design
         return response()->json([
