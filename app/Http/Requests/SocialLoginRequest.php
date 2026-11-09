@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Auth;
+namespace App\Http\Requests;
 
 use App\SocialAuthenticationProvider;
 use Illuminate\Foundation\Http\FormRequest;
@@ -13,7 +13,7 @@ class SocialLoginRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
