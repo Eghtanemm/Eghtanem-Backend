@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\PodcastController;
 use App\Http\Controllers\Api\SubjectController;
 use App\Http\Controllers\Api\VideoController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Models\Video;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -34,6 +35,8 @@ Route::get('/get-videos', function () {
 
     return response()->json($acceptedVideos);
 });
+
+Route::post('/auth/social', [SocialAuthController::class, 'handle']);
 
 // Auth routes - rate limited
 Route::middleware('throttle:auth-sensitive')->group(function () {
