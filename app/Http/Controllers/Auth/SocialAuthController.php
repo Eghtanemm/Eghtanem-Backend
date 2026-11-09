@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\SocialLoginRequest;
+use App\Http\Requests\SocialLoginRequest;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -66,6 +66,7 @@ class SocialAuthController extends Controller
                 'provider'          => $provider,
                 'email_verified_at' => now(),
                 'password'          => bcrypt(Str::random(32)),
+                'email_verified' => true
             ]);
         }
 
