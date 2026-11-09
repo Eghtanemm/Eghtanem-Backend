@@ -36,6 +36,7 @@ class SocialAuthController extends Controller
         $firebaseUid = $claims->get('sub');
         $email = $claims->get('email');
         $tokenName = $claims->get('name');
+        $emailVerified = $claims->get('email_verified') === true;
 
         // Name handling: prioritize the name from the request (important for Apple), then the token, then a default name
         $resolvedName = !empty($requestName)
@@ -47,6 +48,12 @@ class SocialAuthController extends Controller
         $user = User::where('firebase_uid', $firebaseUid)->first();
 
         if (!$user && $email) {
+            if (!$emailVerified) {
+                return response()->json([
+                    'message' => 'The email address is not verified by the provider.',
+                ], 403);
+            }
+
             $user = User::where('email', $email)->first();
         }
 
