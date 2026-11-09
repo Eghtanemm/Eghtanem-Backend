@@ -36,13 +36,13 @@ Route::get('/get-videos', function () {
     return response()->json($acceptedVideos);
 });
 
-Route::post('/auth/social', [SocialAuthController::class, 'handle']);
-
 // Auth routes - rate limited
 Route::middleware('throttle:auth-sensitive')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
+
+    Route::post('/auth/social', [SocialAuthController::class, 'handle']);
 });
 
 Route::middleware('throttle:otp-sensitive')->group(function () {
