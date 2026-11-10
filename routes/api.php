@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\PodcastController;
 use App\Http\Controllers\Api\SubjectController;
 use App\Http\Controllers\Api\VideoController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Models\Video;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -40,6 +41,8 @@ Route::middleware('throttle:auth-sensitive')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
+
+    Route::post('/auth/social', [SocialAuthController::class, 'handle']);
 });
 
 Route::middleware('throttle:otp-sensitive')->group(function () {
